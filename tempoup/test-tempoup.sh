@@ -267,13 +267,38 @@ fi
 [[ ! -e "$ROLLBACK_DIR/tempo.old" ]] || fail "failed upgrade left backup behind"
 ok "failed upgrade restores old tempo"
 
-latest="$(run_tempoup '
+RELEASES_FIXTURE="$TMP_ROOT/releases.json"
+cat > "$RELEASES_FIXTURE" <<'JSON'
+[
+  {"tag_name":"v0.0.1", "draft":false, "prerelease":false},
+  {"tag_name":"v9.0.0", "draft":false, "prerelease":true},
+  {"tag_name":"v1.9.9", "draft":false, "prerelease":false},
+  {"tag_name":"v1.13.1", "draft":false, "prerelease":false},
+  {"tag_name":"v20.0.0", "draft":true, "prerelease":false},
+  {"tag_name":"v30.0.0"},
+  {"tag_name":"v1.13.0", "draft":false, "prerelease":false}
+]
+JSON
+latest="$(RELEASES_FIXTURE="$RELEASES_FIXTURE" run_tempoup '
     gh_authenticated() { return 1; }
-    curl() { printf "  \"tag_name\": \"v0.0.1\",\n  \"tag_name\": \"v1.9.9\",\n  \"tag_name\": \"v1.13.1\",\n  \"tag_name\": \"v1.13.0\",\n"; }
+    curl() { cat "$RELEASES_FIXTURE"; }
     get_latest_version
 ')"
 [[ "$latest" == "v1.13.1" ]] || fail "anonymous latest release selection returned $latest"
-ok "anonymous release selection uses highest numeric version"
+ok "anonymous release selection excludes prereleases and drafts before numeric sorting"
+
+if output="$(run_tempoup '
+    gh_authenticated() { return 1; }
+    command() {
+        if [[ "$*" == "-v jq" ]]; then return 1; fi
+        builtin command "$@"
+    }
+    get_latest_version
+' 2>&1)"; then
+    fail "anonymous release selection without jq succeeded"
+fi
+contains "$output" "jq not found"
+ok "anonymous release selection without a JSON parser fails closed"
 
 # Use local stubs; verification failures must abort before installation proceeds.
 for tag in v0.0.0 v1.1.1 v1.1.2 v1.1.3 v1.13.1; do
