@@ -24,8 +24,10 @@ Zones and prover binaries, and root nextest configuration preserves Zones’
 integration-test concurrency limits. Imported lint/test/build workflows are retired.
 
 Root Dependabot covers the shared Cargo workspace and GitHub Actions workflows,
-plus Docker recipes at `/` and `/zones/docker`. The imported dependency
-configuration is retired.
+plus Docker recipes at `/` and `/zones/docker`, each with its own one-PR limit.
+The imported dependency configuration and redundant lint/Cross configs are retired.
+`zones/Justfile` remains the documented local recipe collection; prover E2E rollout
+documentation lives in [docs/PROVER_E2E.md](docs/PROVER_E2E.md).
 
 The root Test workflow builds Earn before Zones and distributes
 `crates/zones/contracts/out` to each Rust test shard. The merged
