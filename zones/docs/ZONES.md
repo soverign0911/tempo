@@ -821,6 +821,13 @@ cast code 0x5A4d000000000000000000000000000000000000 --rpc-url "$ETH_RPC_URL"
 
 ## Justfile Commands Reference
 
+Run these commands from `zones/` with `just <recipe>`, or from the repository root
+with `just --justfile zones/Justfile <recipe>`. Recipes use the repository root as
+their working directory and keep generated zone data under `zones/generated/` and
+localnet data under `zones/localnet/`. Explicit path arguments are relative to the
+repository root. The former Bun docs recipes were retired because the docs app
+was not imported; the Markdown guides remain under `zones/docs/`.
+
 | Command | Description |
 |---------|-------------|
 | `just deploy-zone <name> [<tip20>] [open\|closed] [enforced\|open]` | One-shot: keygen → fund → create → genesis → start node |
