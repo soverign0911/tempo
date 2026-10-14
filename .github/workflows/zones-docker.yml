@@ -136,6 +136,7 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
+          fetch-depth: ${{ startsWith(github.ref, 'refs/tags/zones/v') && '0' || '1' }}
 
       - uses: tempoxyz/gh-actions/vendor/depot/setup-action@55fe3b63d9612623cc51e6c62d9d62fbcb175fb0 # 2026-09-29T01-25-15Z-55fe3b63
 
@@ -155,6 +156,21 @@ jobs:
           tag="${TAG_REF#refs/tags/}"
           if ! [[ "$tag" =~ ^zones/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
             echo "Expected a Zones release tag: zones/vX.Y.Z[-prerelease]" >&2
+            exit 1
+          fi
+
+          commit_sha="$(git rev-parse HEAD)"
+          tag_commit="$(git rev-parse --verify "refs/tags/$tag^{commit}")"
+          if [[ "$tag_commit" != "$commit_sha" || ! "$commit_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Release tag $tag does not resolve to checked-out commit $commit_sha" >&2
+            exit 1
+          fi
+          if ! git show-ref --verify --quiet refs/remotes/origin/main; then
+            echo "Protected main was not fetched" >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$commit_sha" refs/remotes/origin/main; then
+            echo "Release tag $tag does not point to a commit on main" >&2
             exit 1
           fi
 
