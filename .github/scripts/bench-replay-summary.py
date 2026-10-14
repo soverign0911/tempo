@@ -157,6 +157,14 @@ def compute_wait_stats(combined: list[dict], field: str) -> dict:
     }
 
 
+def _matched_blocks(baseline: list[dict], feature: list[dict]) -> list[tuple[dict, dict]]:
+    """Select the same block population for estimates and paired intervals."""
+    baseline_by_block = {r["block_number"]: r for r in baseline}
+    feature_by_block = {r["block_number"]: r for r in feature}
+    common_blocks = sorted(set(baseline_by_block) & set(feature_by_block))
+    return [(baseline_by_block[bn], feature_by_block[bn]) for bn in common_blocks]
+
+
 def _paired_data(
     baseline: list[dict], feature: list[dict]
 ) -> tuple[list[tuple[float, float]], list[float], list[float], list[float], list[float]]:
@@ -169,18 +177,12 @@ def _paired_data(
         total_lat_diffs_ms: list of feature − baseline total latency diffs in ms
         persist_diffs_ms: list of feature − baseline persistence wait diffs in ms
     """
-    baseline_by_block = {r["block_number"]: r for r in baseline}
-    feature_by_block = {r["block_number"]: r for r in feature}
-    common_blocks = sorted(set(baseline_by_block) & set(feature_by_block))
-
     pairs = []
     lat_diffs_ms = []
     mgas_diffs = []
     total_lat_diffs_ms = []
     persist_diffs_ms = []
-    for bn in common_blocks:
-        b = baseline_by_block[bn]
-        f = feature_by_block[bn]
+    for b, f in _matched_blocks(baseline, feature):
         b_ms = b["new_payload_latency_us"] / 1_000
         f_ms = f["new_payload_latency_us"] / 1_000
         pairs.append((b_ms, f_ms))
@@ -550,8 +552,12 @@ def main():
         feature_runs.append(data)
         feature_samples.extend(samples)
 
-    all_baseline = [r for run in baseline_runs for r in run]
-    all_feature = [r for run in feature_runs for r in run]
+    matched_runs = [
+        _matched_blocks(baseline, feature)
+        for baseline, feature in zip(baseline_runs, feature_runs)
+    ]
+    all_baseline = [baseline for run in matched_runs for baseline, _ in run]
+    all_feature = [feature for run in matched_runs for _, feature in run]
 
     baseline_stats = compute_stats(all_baseline)
     feature_stats = compute_stats(all_feature)
