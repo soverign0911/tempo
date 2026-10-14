@@ -29,18 +29,19 @@ mainnet and Moderato execution through Genesis–T10 to `eras/tempo-genesis-t10`
 in-process. Unmatched chains and custom fork schedules use the native path.
 
 Docker images, release archives, and `tempoup` install the worker beside the live executable.
-Source builds must bundle it explicitly; the pinned source and era metadata are recorded in
-`bin/tempo/history.json`:
+Source builds must bundle it explicitly:
 
 ```sh
 cargo build --locked --release --bin tempo
 python3 scripts/bundle-history.py --output target/release --profile release
 ```
 
-The helper fetches the pinned frozen source, builds with its frozen feature, and
-verifies calls and traces before installation. Use `--source /path/to/tempo-history` for a clean
-local checkout at the pin, or `--package /path/to/extracted-bundle` for a trusted, already verified
-package matching the host and profile.
+The worker is the standalone `bin/tempo-metabinary/eras/genesis-t10` crate. It pins the frozen
+source, tagged `era/genesis-t10-v0.1.2` in this repository, together with that tree's `Cargo.lock`,
+so its dependencies never unify with the live workspace. The helper builds it, checks the embedded
+catalog against the frozen chain schedules, and smoke-tests calls and traces on mainnet,
+Moderato, and synthetic T10/T11 chains before installation. Use `--package /path/to/bundle` to
+reinstall a previously verified bundle for the same host, profile, and pin.
 Installed checksums and build/smoke provenance live in `history/genesis-t10/`.
 
 Workers inherit the selected genesis, datadir, custom static-file/RocksDB paths, and resolved SDK
