@@ -36,7 +36,7 @@ pub struct TIP20Factory {}
 
 /// Computes the deterministic TIP20 address from sender and salt.
 /// Returns the address and the lower bytes used for derivation.
-pub(crate) fn compute_tip20_address(sender: Address, salt: B256) -> (Address, u64) {
+pub fn compute_tip20_address(sender: Address, salt: B256) -> (Address, u64) {
     let hash = keccak256((sender, salt).abi_encode());
     let id = u64::from_be_bytes(hash[..8].try_into().expect("8 bytes"));
     (Address::new_tip20(id), id)
